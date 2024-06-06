@@ -23,6 +23,10 @@ jobs:
 
       - name: Get team ID
         id: get_team_id
+        env:
+          ORGANIZATION: ${{ vars.ORGANIZATION }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          APPROVER: ${{ inputs.approver }}
         run: |
             TEAM_ID=$(curl -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/$ORGANIZATION/teams/$APPROVER | jq -r ".id")
             echo "TEAM_ID:$TEAM_ID" >> $GITHUB_OUTPUT
