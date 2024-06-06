@@ -1,0 +1,56 @@
+name: Add Approvers to Environments
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        type: choice
+        options: ['dev', 'pre', 'pro']
+        default: 'dev'
+      approver:
+        description: 'Username of the approver'
+        required: true
+        default: 'approver_username'
+
+jobs:
+  add-approvers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Read repos.txt
+        id: read_repos
+        run: |
+          REPOS=$(cat repos.txt)
+          echo "$REPOS" > repos_output.txt
+
+      - name: Set REPOS environment variable
+        id: set_repos_env
+        run: echo "REPOS=$(cat repos_output.txt)" >> $GITHUB_ENV
+
+      - name: Add Approvers to Environments
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORGANIZATION: ${{ vars.ORGANIZATION }}
+          REPOS: ${{ env.REPOS }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          APPROVER: ${{ github.event.inputs.approver }}
+        run: |
+          for repo in $REPOS; do
+            ENV_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/$ORGANIZATION/$repo/environments" | jq -r ".environments[] | select(.name==\"$ENVIRONMENT\") | .id")
+
+            if [ -z "$ENV_ID" ]; then
+              echo "Environment $ENVIRONMENT not found in repository $repo"
+              continue
+            fi
+
+            curl -s -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repositories/$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$ORGANIZATION/$repo | jq -r '.id')/environments/$ENVIRONMENT/required_reviewers" \
+              -d "{\"users\":[\"$APPROVER\"]}"
+
+            echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $repo"
+          done
