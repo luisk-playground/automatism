@@ -20,23 +20,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Read repos.txt
-        id: read_repos
-        run: |
-          REPOS=$(cat repos.txt)
-          echo "REPOS=$REPOS" >> GITHUB_ENV
-
       - name: Add Approvers to Environments
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ORGANIZATION: ${{ vars.ORGANIZATION }}
           ENVIRONMENT: ${{ inputs.environment }}
           APPROVER: ${{ inputs.approver }}
-
         run: |
-          echo REPOS: ${{ env.repos }}
-          echo REPOS2: $repos
-          REPOS=$(echo "$repos" | jq -r '.[]')
+          cat repos.txt
+          REPOS=$(cat repos.txt | jq -r '.[]')
           for repo in $REPOS; do
 
             ENV_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
