@@ -28,7 +28,8 @@ jobs:
         run: |
           cat repos.txt
           while read -r line;
-
+          do
+          
             ENV_ID=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
               "https://api.github.com/repos/$ORGANIZATION/$line/environments" | jq -r ".environments[] | select(.name==\"$ENVIRONMENT\") | .id")
 
