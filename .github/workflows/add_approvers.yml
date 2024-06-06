@@ -22,27 +22,26 @@ jobs:
 
       - name: Add Approvers to Environments
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ORGANIZATION: ${{ vars.ORGANIZATION }}
           ENVIRONMENT: ${{ inputs.environment }}
           APPROVER: ${{ inputs.approver }}
         run: |
           cat repos.txt
-          REPOS=$(cat repos.txt | jq -r '.[]')
-          for repo in $REPOS; do
+          while read -r line;
 
-            ENV_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-              "https://api.github.com/repos/$ORGANIZATION/$repo/environments" | jq -r ".environments[] | select(.name==\"$ENVIRONMENT\") | .id")
+            ENV_ID=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
+              "https://api.github.com/repos/$ORGANIZATION/$line/environments" | jq -r ".environments[] | select(.name==\"$ENVIRONMENT\") | .id")
 
             if [ -z "$ENV_ID" ]; then
-              echo "Environment $ENVIRONMENT not found in repository $repo"
+              echo "Environment $ENVIRONMENT not found in repository $line"
               continue
             fi
 
-            curl -s -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+            curl -s -X PUT -H "Authorization: token ${{ secrets.GH_PAT }}" \
               -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repositories/$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$ORGANIZATION/$repo | jq -r '.id')/environments/$ENVIRONMENT/required_reviewers" \
+              "https://api.github.com/repositories/$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/repos/$ORGANIZATION/$line | jq -r '.id')/environments/$ENVIRONMENT/required_reviewers" \
               -d "{\"users\":[\"$APPROVER\"]}"
 
-            echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $repo"
-          done
+            echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $line"
+
+          done < repos.txt
