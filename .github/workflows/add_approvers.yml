@@ -28,8 +28,8 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
           APPROVER: ${{ inputs.approver }}
         run: |
-            TEAM_ID=$(curl -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/$ORGANIZATION/teams/$APPROVER | jq -r ".id")
-            echo "TEAM_ID=$TEAM_ID" >> $GITHUB_OUTPUT
+          TEAM_ID=$(curl -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/$ORGANIZATION/teams/$APPROVER | jq -r ".id")
+          echo "TEAM_ID=$TEAM_ID" >> $GITHUB_OUTPUT
 
       - name: Add Approvers to Environments
         env:
@@ -38,7 +38,7 @@ jobs:
           APPROVER: ${{ inputs.approver }}
         run: |
           cat repos.txt
-          echo TEAM_ID ${{ steps.get_team_id.output.TEAM_ID }}
+          echo TEAM_ID ${{ steps.get_team_id.outputs.TEAM_ID }}
           while read -r line;
           do
 
