@@ -24,13 +24,7 @@ jobs:
         id: read_repos
         run: |
           REPOS=$(cat repos.txt)
-          echo "$REPOS" > repos_output.txt
-
-      - name: Set REPOS environment variable
-        id: set_repos_env
-        run: |
-          cat repos_output.txt
-          echo "REPOS=$(cat repos_output.txt)" >> $GITHUB_ENV
+          echo "REPOS=$REPOS" >> GITHUB_ENV
 
       - name: Add Approvers to Environments
         env:
@@ -40,7 +34,8 @@ jobs:
           APPROVER: ${{ inputs.approver }}
 
         run: |
-          echo REPOS: $repos
+          echo REPOS: ${{ env.repos }}
+          echo REPOS2: $repos
           REPOS=$(echo "$repos" | jq -r '.[]')
           for repo in $REPOS; do
 
