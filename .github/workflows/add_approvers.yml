@@ -38,9 +38,12 @@ jobs:
           ORGANIZATION: ${{ vars.ORGANIZATION }}
           ENVIRONMENT: ${{ inputs.environment }}
           APPROVER: ${{ inputs.approver }}
+
         run: |
+          echo REPOS: $repos
           REPOS=$(echo "$repos" | jq -r '.[]')
           for repo in $REPOS; do
+
             ENV_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
               "https://api.github.com/repos/$ORGANIZATION/$repo/environments" | jq -r ".environments[] | select(.name==\"$ENVIRONMENT\") | .id")
 
