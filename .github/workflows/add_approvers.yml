@@ -40,7 +40,7 @@ jobs:
               continue
             fi
 
-            TEAM_ID=$(curl -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/<org-name>/teams/$APPROVER | jq -r ".id")
+            TEAM_ID=$(curl -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/$ORGANIZATION/teams/$APPROVER | jq -r ".id")
 
             # curl -s -X PUT -H "Authorization: token ${{ secrets.GH_PAT }}" \
             #   -H "Accept: application/vnd.github.v3+json" \
