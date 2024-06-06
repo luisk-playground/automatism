@@ -28,7 +28,9 @@ jobs:
 
       - name: Set REPOS environment variable
         id: set_repos_env
-        run: echo "REPOS=$(cat repos_output.txt)" >> $GITHUB_ENV
+        run: |
+          cat repos_output.txt
+          echo "REPOS=$(cat repos_output.txt)" >> $GITHUB_ENV
 
       - name: Add Approvers to Environments
         env:
