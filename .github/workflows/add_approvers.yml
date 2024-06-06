@@ -29,7 +29,7 @@ jobs:
           APPROVER: ${{ inputs.approver }}
         run: |
             TEAM_ID=$(curl -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/$ORGANIZATION/teams/$APPROVER | jq -r ".id")
-            echo "TEAM_ID:$TEAM_ID" >> $GITHUB_OUTPUT
+            echo "TEAM_ID=$TEAM_ID" >> $GITHUB_OUTPUT
 
       - name: Add Approvers to Environments
         env:
