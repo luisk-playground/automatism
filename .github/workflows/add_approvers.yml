@@ -52,24 +52,6 @@ jobs:
               continue
             fi
 
-            # JSON_PAYLOAD=$(cat <<EOF
-            # {
-            #   "wait_timer": 30,
-            #   "prevent_self_review": false,
-            #   "reviewers": [
-            #     {
-            #       "type": "Team",
-            #       "id": $TEAM_ID
-            #     }
-            #   ],
-            #   "deployment_branch_policy": {
-            #     "protected_branches": false,
-            #     "custom_branch_policies": true
-            #   }
-            # }
-            # EOF
-            # )
-
             curl -L \
               -X PUT \
               -H "Accept: application/vnd.github+json" \
@@ -79,5 +61,7 @@ jobs:
               -d '{"prevent_self_review":false,"reviewers":[{"type":"Team","id":${{ steps.get_team_id.outputs.TEAM_ID }}}],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":false}}'
 
             echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $line"
+
+            
 
           done < repos.txt
