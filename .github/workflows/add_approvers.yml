@@ -76,7 +76,7 @@ jobs:
               -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               https://api.github.com/repos/$ORGANIZATION/$line/environments/$ENVIRONMENT \
-              -d '{"prevent_self_review":false,"reviewers":[{"type":"Team","id":${{ steps.get_team_id.outputs.TEAM_ID }}}],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}'
+              -d '{"prevent_self_review":false,"reviewers":[{"type":"Team","id":${{ steps.get_team_id.outputs.TEAM_ID }}}],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":false}}'
 
             echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $line"
 
