@@ -37,7 +37,7 @@ jobs:
           APPROVER: ${{ inputs.approver }}
         run: |
           cat repos.txt
-          echo TEAM_ID ${{ steps.get_team_id.outputs.TEAM_ID }}
+          echo \nTEAM_ID ${{ steps.get_team_id.outputs.TEAM_ID }}
           while read -r line;
           do
 
