@@ -54,6 +54,7 @@ jobs:
 
             # Prepare updated reviewers list
             UPDATED_REVIEWERS=$(echo "$EXISTING_REVIEWERS" | jq -c '[.] | add | unique | . + [{"type": "Team", "id": '"${{ steps.get_team_id.outputs.TEAM_ID }}"'}]')
+            echo $UPDATED_REVIEWERS
 
             # Update environment with new list of reviewers
             curl -s -L \
