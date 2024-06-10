@@ -26,7 +26,7 @@ jobs:
           ORGANIZATION: ${{ vars.ORGANIZATION }}
           APPROVER: ${{ inputs.approver }}
         run: |
-          TEAM_ID=$(curl -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/$ORGANIZATION/teams/$APPROVER | jq -r ".id")
+          TEAM_ID=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/orgs/$ORGANIZATION/teams/$APPROVER | jq -r ".id")
           echo "TEAM_ID=$TEAM_ID" >> $GITHUB_OUTPUT
 
       - name: Add Approvers to Environments
@@ -45,8 +45,17 @@ jobs:
             fi
 
             # Get existing reviewers
-            EXISTING_REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
-              "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT" | jq '.reviewers')
+            ENV_DETAILS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
+              "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT")
+            echo "Environment details: $ENV_DETAILS"
+            
+            EXISTING_REVIEWERS=$(echo "$ENV_DETAILS" | jq '.reviewers')
+            echo "Existing reviewers: $EXISTING_REVIEWERS"
+
+            # If EXISTING_REVIEWERS is null, initialize it as an empty array
+            if [ "$EXISTING_REVIEWERS" == "null" ]; then
+              EXISTING_REVIEWERS="[]"
+            fi
 
             echo "Existing reviewers for $repo in $ENVIRONMENT:"
             echo "$EXISTING_REVIEWERS" | jq
@@ -55,7 +64,7 @@ jobs:
             UPDATED_REVIEWERS=$(echo "$EXISTING_REVIEWERS" | jq ". += [{\"type\": \"Team\", \"id\": ${{ steps.get_team_id.outputs.TEAM_ID }} }]")
 
             # Update environment with new list of reviewers
-            curl -L \
+            curl -s -L \
               -X PUT \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
@@ -71,8 +80,5 @@ jobs:
             echo "$NEW_REVIEWERS" | jq
 
             echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $repo"
-
-            echo ###########################################################################################
-            echo ###########################################################################################
 
           done < repos.txt
