@@ -48,6 +48,9 @@ jobs:
             EXISTING_REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
               "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT" | jq '.reviewers')
 
+            echo "Existing reviewers for $repo in $ENVIRONMENT:"
+            echo "$EXISTING_REVIEWERS" | jq
+
             # Add new reviewer to the list
             UPDATED_REVIEWERS=$(echo "$EXISTING_REVIEWERS" | jq ". += [{\"type\": \"Team\", \"id\": ${{ steps.get_team_id.outputs.TEAM_ID }} }]")
 
@@ -59,6 +62,13 @@ jobs:
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT" \
               -d "{\"prevent_self_review\":false,\"reviewers\":$UPDATED_REVIEWERS,\"deployment_branch_policy\":null}"
+
+            # Get reviewers after update
+            NEW_REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
+              "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT" | jq '.reviewers')
+
+            echo "Reviewers for $repo in $ENVIRONMENT after adding $APPROVER:"
+            echo "$NEW_REVIEWERS" | jq
 
             echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $repo"
 
