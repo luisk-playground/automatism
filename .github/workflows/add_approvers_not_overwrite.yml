@@ -49,19 +49,11 @@ jobs:
               "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT")
             echo "Environment details: $ENV_DETAILS"
             
-            EXISTING_REVIEWERS=$(echo "$ENV_DETAILS" | jq '.reviewers')
+            EXISTING_REVIEWERS=$(echo "$ENV_DETAILS" | jq -r '.protection_rules[] | select(.type=="required_reviewers") | .reviewers[].reviewer.name')
             echo "Existing reviewers: $EXISTING_REVIEWERS"
 
-            # If EXISTING_REVIEWERS is null, initialize it as an empty array
-            if [ "$EXISTING_REVIEWERS" == "null" ]; then
-              EXISTING_REVIEWERS="[]"
-            fi
-
-            echo "Existing reviewers for $repo in $ENVIRONMENT:"
-            echo "$EXISTING_REVIEWERS" | jq
-
-            # Add new reviewer to the list
-            UPDATED_REVIEWERS=$(echo "$EXISTING_REVIEWERS" | jq ". += [{\"type\": \"Team\", \"id\": ${{ steps.get_team_id.outputs.TEAM_ID }} }]")
+            # Prepare updated reviewers list
+            UPDATED_REVIEWERS=$(echo "$EXISTING_REVIEWERS" | jq -c '[.] | add | unique | . + [{"type": "Team", "id": '"${{ steps.get_team_id.outputs.TEAM_ID }}"'}]')
 
             # Update environment with new list of reviewers
             curl -s -L \
@@ -70,14 +62,14 @@ jobs:
               -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT" \
-              -d "{\"prevent_self_review\":false,\"reviewers\":$UPDATED_REVIEWERS,\"deployment_branch_policy\":null}"
+              -d '{"reviewers":'"$UPDATED_REVIEWERS"',"deployment_branch_policy":null}'
 
             # Get reviewers after update
             NEW_REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
-              "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT" | jq '.reviewers')
+              "https://api.github.com/repos/$ORGANIZATION/$repo/environments/$ENVIRONMENT" | jq -r '.protection_rules[] | select(.type=="required_reviewers") | .reviewers[].reviewer.name')
 
             echo "Reviewers for $repo in $ENVIRONMENT after adding $APPROVER:"
-            echo "$NEW_REVIEWERS" | jq
+            echo "$NEW_REVIEWERS"
 
             echo "Approver $APPROVER added to environment $ENVIRONMENT in repository $repo"
 
