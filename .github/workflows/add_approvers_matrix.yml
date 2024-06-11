@@ -1,4 +1,4 @@
-name: Add Approvers
+name: Add Approvers Matrix
 
 on:
   workflow_dispatch:
