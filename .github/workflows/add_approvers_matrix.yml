@@ -1,4 +1,4 @@
-name: Add Approvers Matrix
+name: Add Approvers
 
 on:
   workflow_dispatch:
@@ -61,13 +61,12 @@ jobs:
             "https://api.github.com/repos/$ORGANIZATION/$REPO/environments/$ENVIRONMENT")
           echo "Environment details: $ENV_DETAILS"
 
-          EXISTING_REVIEWERS=$(echo "$ENV_DETAILS" | jq -r '.protection_rules[] | select(.type=="required_reviewers") | .reviewers[].reviewer')
+          EXISTING_REVIEWERS=$(echo "$ENV_DETAILS" | jq -r '.protection_rules[] | select(.type=="required_reviewers") | .reviewers')
 
           REVIEWERS_ARRAY="[]"
 
           if [ -n "$EXISTING_REVIEWERS" ]; then
-            echo "Found  some reviewers in the Repo"
-            REVIEWERS_ARRAY=$(echo "$EXISTING_REVIEWERS" | jq -c '[.[] | {type: "Team", id: .id}]')
+            REVIEWERS_ARRAY=$(echo "$EXISTING_REVIEWERS" | jq -c '[.[] | {type: "Team", id: .reviewer.id}]')
           fi
 
           # Add the new reviewer ID if it does not exist
