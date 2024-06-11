@@ -66,6 +66,7 @@ jobs:
           REVIEWERS_ARRAY="[]"
 
           if [ -n "$EXISTING_REVIEWERS" ]; then
+            echo "Found  some reviewers in the Repo"
             REVIEWERS_ARRAY=$(echo "$EXISTING_REVIEWERS" | jq -c '[.[] | {type: "Team", id: .id}]')
           fi
 
