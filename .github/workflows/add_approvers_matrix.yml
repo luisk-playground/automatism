@@ -1,4 +1,4 @@
-name: Add Approvers
+name: Add Approvers Matrix
 
 on:
   workflow_dispatch:
@@ -27,7 +27,6 @@ jobs:
         id: get-repo-name
         run: |
           JSON=$(cat repository.json)
-          echo $JSON
           echo "matrix=${JSON}" >> $GITHUB_OUTPUT
 
   deploy:
@@ -35,7 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [read_repos_json]
     strategy:
-      matrix: ${{ fromJson(needs.read_repos_json.outputs.repos) }}
+      matrix:
+        repo: ${{ fromJson(needs.read_repos_json.outputs.repos).repo_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -54,43 +54,37 @@ jobs:
         env:
           ORGANIZATION: ${{ vars.ORGANIZATION }}
           ENVIRONMENT: ${{ inputs.environment }}
-          REPO: ${{ matrix.repo_name }}
+          REPO: ${{ matrix.repo }}
         run: |
           # Get existing reviewers
           ENV_DETAILS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
             "https://api.github.com/repos/$ORGANIZATION/$REPO/environments/$ENVIRONMENT")
           echo "Environment details: $ENV_DETAILS"
 
-          EXISTING_REVIEWERS=$(echo "$ENV_DETAILS" | jq -r '.protection_rules[] | select(.type=="required_reviewers") | .reviewers[].reviewer | @base64')
-          echo "Existing reviewers: $EXISTING_REVIEWERS"
+          EXISTING_REVIEWERS=$(echo "$ENV_DETAILS" | jq -r '.protection_rules[] | select(.type=="required_reviewers") | .reviewers[].reviewer')
 
-          REVIEWERS_ARRAY=""
+          REVIEWERS_ARRAY="[]"
 
-          for reviewer in $EXISTING_REVIEWERS; do
-            reviewer_json=$(echo $reviewer | base64 --decode)
-            reviewer_id=$(echo $reviewer_json | jq -r '.id')
-            REVIEWERS_ARRAY="${REVIEWERS_ARRAY}{\"type\":\"Team\",\"id\":$reviewer_id},"
-          done
-
-          # Remove the last comma
-          REVIEWERS_ARRAY=${REVIEWERS_ARRAY%,}
+          if [ -n "$EXISTING_REVIEWERS" ]; then
+            REVIEWERS_ARRAY=$(echo "$EXISTING_REVIEWERS" | jq -c '[.[] | {type: "Team", id: .id}]')
+          fi
 
           # Add the new reviewer ID if it does not exist
           NEW_REVIEWER_ID=${{ steps.get_team_id.outputs.TEAM_ID }}
-          if ! echo "$REVIEWERS_ARRAY" | grep -q "\"id\":$NEW_REVIEWER_ID"; then
-            REVIEWERS_ARRAY="${REVIEWERS_ARRAY},{\"type\":\"Team\",\"id\":$NEW_REVIEWER_ID}"
+          if ! echo "$REVIEWERS_ARRAY" | jq -e ".[] | select(.id==$NEW_REVIEWER_ID)" > /dev/null; then
+            REVIEWERS_ARRAY=$(echo "$REVIEWERS_ARRAY" | jq -c ". + [{\"type\": \"Team\", \"id\": $NEW_REVIEWER_ID}]")
           fi
 
           # Output the result
-          echo "REVIEWERS_ARRAY=[$REVIEWERS_ARRAY]" >> $GITHUB_OUTPUT
-          echo "Updated reviewers array: [$REVIEWERS_ARRAY]"
+          echo "REVIEWERS_ARRAY=$REVIEWERS_ARRAY" >> $GITHUB_OUTPUT
+          echo "Updated reviewers array: $REVIEWERS_ARRAY"
 
       - name: Add Approvers to Environments
         env:
           ORGANIZATION: ${{ vars.ORGANIZATION }}
           ENVIRONMENT: ${{ inputs.environment }}
           REVIEWERS_ARRAY: ${{ steps.process_reviewers.outputs.REVIEWERS_ARRAY }}
-          REPO: ${{ matrix.repo_name }}
+          REPO: ${{ matrix.repo }}
         run: |
           ENV_ID=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
             "https://api.github.com/repos/$ORGANIZATION/$REPO/environments" | jq -r ".environments[] | select(.name==\"$ENVIRONMENT\") | .id")
