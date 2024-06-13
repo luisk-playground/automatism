@@ -27,11 +27,10 @@ jobs:
     - name: Get current branch protection settings
       id: get_protection
       env:
-        GH_PAT: ${{ secrets.GH_PAT }}
         REPO: ${{ inputs.repo }}
         OLD_BRANCH: ${{ inputs.old_branch }}
       run: |
-        PROTECTION_SETTINGS=$(curl -s -H "Authorization: token $GH_PAT" \
+        PROTECTION_SETTINGS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
           "https://api.github.com/repos/$GITHUB_REPOSITORY/branches/$OLD_BRANCH/protection")
 
         if [[ $PROTECTION_SETTINGS == *"Not Found"* ]]; then
