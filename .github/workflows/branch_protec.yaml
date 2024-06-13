@@ -1,0 +1,87 @@
+name: Change Branch Protection
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'Repository to update'
+        required: true
+        default: 'your-repo-name'
+      old_branch:
+        description: 'Old branch name'
+        required: true
+        default: 'development'
+      new_branch:
+        description: 'New branch name'
+        required: true
+        default: 'dis-development'
+
+jobs:
+  change-branch-protection:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Get current branch protection settings
+      id: get_protection
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
+        REPO: ${{ inputs.repo }}
+        OLD_BRANCH: ${{ inputs.old_branch }}
+      run: |
+        PROTECTION_SETTINGS=$(curl -s -H "Authorization: token $GH_PAT" \
+          "https://api.github.com/repos/$GITHUB_REPOSITORY/branches/$OLD_BRANCH/protection")
+
+        if [[ $PROTECTION_SETTINGS == *"Not Found"* ]]; then
+          echo "Branch protection not found for $OLD_BRANCH"
+          exit 1
+        fi
+
+        echo "Brach proctection found: $PROTECTION_SETTINGS"
+
+        echo "protection=$PROTECTION_SETTINGS" >> $GITHUB_ENV
+
+    - name: Apply protection to new branch
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
+        REPO: ${{ inputs.repo }}
+        NEW_BRANCH: ${{ inputs.new_branch }}
+        PROTECTION_SETTINGS: ${{ env.protection }}
+      run: |
+        curl -s -X PUT -H "Authorization: token $GH_PAT" \
+          -H "Accept: application/vnd.github.luke-cage-preview+json" \
+          "https://api.github.com/repos/$GITHUB_REPOSITORY/branches/$NEW_BRANCH/protection" \
+          -d "$PROTECTION_SETTINGS"
+
+        echo "Branch protection applied to $NEW_BRANCH"
+
+    - name: Verify new branch protection settings
+      id: verify_protection
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
+        REPO: ${{ inputs.repo }}
+        NEW_BRANCH: ${{ inputs.new_branch }}
+      run: |
+        NEW_PROTECTION_SETTINGS=$(curl -s -H "Authorization: token $GH_PAT" \
+          "https://api.github.com/repos/$GITHUB_REPOSITORY/branches/$NEW_BRANCH/protection")
+
+        if [[ $NEW_PROTECTION_SETTINGS == *"Not Found"* ]]; then
+          echo "Branch protection not found for $NEW_BRANCH"
+          exit 1
+        fi
+
+        echo "New branch protection settings: $NEW_PROTECTION_SETTINGS"
+
+    # - name: Optional: Remove protection from old branch
+    #   if: always()
+    #   env:
+    #     GH_PAT: ${{ secrets.GH_PAT }}
+    #     REPO: ${{ inputs.repo }}
+    #     OLD_BRANCH: ${{ inputs.old_branch }}
+    #   run: |
+    #     curl -s -X DELETE -H "Authorization: token $GH_PAT" \
+    #       "https://api.github.com/repos/$GITHUB_REPOSITORY/branches/$OLD_BRANCH/protection"
+
+    #     echo "Branch protection removed from $OLD_BRANCH"
