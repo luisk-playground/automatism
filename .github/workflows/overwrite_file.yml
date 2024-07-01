@@ -1,0 +1,129 @@
+---
+name: Loop changing repo
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to automate'
+        type: choice
+        options: ['development', 'certification']
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Read file
+      run: |
+        git config --global user.name "DevOps Automatism"
+        git config --global user.email devops-automatism@santanderglobaltech.com
+
+        while read -r line;
+        do
+          git clone https://username:${{ secrets.GH_PAT }}@github.com/$line.git
+          repo_name=$(basename "$line" .git)
+          cd $repo_name
+          git checkout ${{ inputs.branch }}
+
+          # Crear el script Python en el repositorio clonado
+          echo 'import yaml
+
+          # Definir los nuevos jobs como diccionarios
+          remove_branch_protection_job = {
+              "remove_branch_protection": {
+                  "runs-on": "ubuntu-latest",
+                  "steps": [
+                      {
+                          "name": "Remove protection from old branch",
+                          "env": {
+                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}"
+                          },
+                          "run": "curl -s -X DELETE -H \\"Authorization: token $GH_TOKEN\\" \\"https://api.github.com/repos/${{ github.repository }}/branches/development/protection\\""
+                      }
+                  ]
+              }
+          }
+
+          apply_branch_protection_job = {
+              "apply_branch_protection": {
+                  "needs": ["sync_develop"],
+                  "runs-on": "ubuntu-latest",
+                  "steps": [
+                      {
+                          "name": "Get current branch protection settings",
+                          "id": "payload",
+                          "env": {
+                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}",
+                              "REPO": "${{ github.repository }}"
+                          },
+                          "run": "json=\'{ \\"enforce_admins\\": true, \\"required_pull_request_reviews\\": { \\"dismiss_stale_reviews\\": false, \\"require_code_owner_reviews\\": true, \\"require_last_push_approval\\": false, \\"required_approving_review_count\\": 1 }, \\"restrictions\\": null, \\"required_status_checks\\": null }\' echo json=$json >> $GITHUB_OUTPUT echo $json"
+                      },
+                      {
+                          "name": "Apply protection to new branch",
+                          "env": {
+                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}",
+                              "REPO": "${{ github.repository }}",
+                              "BRANCH": "development"
+                          },
+                          "run": "curl -s -X PUT -H \\"Authorization: token $GH_TOKEN\\" -H \\"Accept: application/vnd.github.luke-cage-preview+json\\" \\"https://api.github.com/repos/${{ github.repository }}/branches/development/protection\\" -d \'${{ steps.payload.outputs.json }}\' echo \\"Branch protection applied to $BRANCH\\""
+                      },
+                      {
+                          "name": "Verify new branch protection settings",
+                          "env": {
+                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}",
+                              "REPO": "${{ github.repository }}",
+                              "BRANCH": "development"
+                          },
+                          "run": "PROTECTION_SETTINGS=$(curl -s -H \\"Authorization: token $GH_TOKEN\\" \\"https://api.github.com/repos/${{ github.repository }}/branches/development/protection\\") if [[ $PROTECTION_SETTINGS == *\\"Not Found\\"* ]]; then echo \\"Branch protection not found for $BRANCH\\" exit 1 fi echo \\"Branch protection found: $PROTECTION_SETTINGS\\""
+                      }
+                  ]
+              }
+          }
+
+          # Cargar el archivo deploy-main.yml
+          with open("deploy-main.yml", "r") as file:
+              data = yaml.safe_load(file)
+
+          # Añadir la dependencia needs al job sync_develop
+          if "sync_develop" in data["jobs"]:
+              data["jobs"]["sync_develop"]["needs"] = ["remove_branch_protection"]
+
+          # Añadir los nuevos jobs en el orden correcto
+          new_jobs_order = {
+              "remove_branch_protection": remove_branch_protection_job["remove_branch_protection"],
+              "sync_develop": data["jobs"]["sync_develop"],
+              "apply_branch_protection": apply_branch_protection_job["apply_branch_protection"],
+              "CI-CD-main": data["jobs"]["CI-CD-main"]
+          }
+
+          data["jobs"] = new_jobs_order
+
+          # Guardar los cambios en el archivo deploy-main.yml
+          with open("deploy-main.yml", "w") as file:
+          yaml.dump(data, file, sort_keys=False)' > update_deploy_main.py
+
+          # Ejecutar el script Python
+          python3 update_deploy_main.py
+
+          # Eliminar el script Python después de la ejecución
+          rm update_deploy_main.py
+
+          if ! git diff --quiet; then
+            echo "$line" >> ../version-update.file
+            git add .github/workflows/deploy-main.yml
+            git commit -m "Change workflow deploy-main"
+            git push
+          else
+            echo "$line" >> ../not-version-update.file
+          fi
+          cd ..
+          rm -rf "$repo_name"
+        done < ${{ inputs.branch }}.file
+
+    - name: Print Updated Repos
+      run: cat version-update.file
+
+    - name: Print Not Updated Repos
+      run: cat not-version-update.file
