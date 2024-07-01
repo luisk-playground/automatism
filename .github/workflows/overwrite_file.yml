@@ -38,7 +38,7 @@ jobs:
                       {
                           "name": "Remove protection from old branch",
                           "env": {
-                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}"
+                              "GH_TOKEN": "${{ secrets.GH_PAT }}"
                           },
                           "run": "curl -s -X DELETE -H \\"Authorization: token $GH_TOKEN\\" \\"https://api.github.com/repos/${{ github.repository }}/branches/development/protection\\""
                       }
@@ -55,7 +55,7 @@ jobs:
                           "name": "Get current branch protection settings",
                           "id": "payload",
                           "env": {
-                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}",
+                              "GH_TOKEN": "${{ secrets.GH_PAT }}",
                               "REPO": "${{ github.repository }}"
                           },
                           "run": "json=\'{ \\"enforce_admins\\": true, \\"required_pull_request_reviews\\": { \\"dismiss_stale_reviews\\": false, \\"require_code_owner_reviews\\": true, \\"require_last_push_approval\\": false, \\"required_approving_review_count\\": 1 }, \\"restrictions\\": null, \\"required_status_checks\\": null }\' echo json=$json >> $GITHUB_OUTPUT echo $json"
@@ -63,7 +63,7 @@ jobs:
                       {
                           "name": "Apply protection to new branch",
                           "env": {
-                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}",
+                              "GH_TOKEN": "${{ secrets.GH_PAT }}",
                               "REPO": "${{ github.repository }}",
                               "BRANCH": "development"
                           },
@@ -72,7 +72,7 @@ jobs:
                       {
                           "name": "Verify new branch protection settings",
                           "env": {
-                              "GH_TOKEN": "${{ secrets.ACTIONS_PA }}",
+                              "GH_TOKEN": "${{ secrets.GH_PAT }}",
                               "REPO": "${{ github.repository }}",
                               "BRANCH": "development"
                           },
