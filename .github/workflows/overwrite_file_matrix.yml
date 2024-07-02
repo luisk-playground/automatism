@@ -39,7 +39,7 @@ jobs:
 
     - name: Read file
       env:
-        REPO: ${{ matrix.repo }
+        REPO: ${{ matrix.repo }}
       run: |
         git config --global user.name "DevOps Automatism"
         git config --global user.email devops-automatism@santanderglobaltech.com
