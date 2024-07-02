@@ -1,5 +1,5 @@
 ---
-name: Loop changing repo
+name: Loop changing repo using matrix
 
 on:
   workflow_dispatch:
