@@ -30,12 +30,12 @@ jobs:
           cd $repo_name
           git checkout ${{ inputs.branch }}
 
-          cp ./../update_deploy_main.py .
+          cp ../update_deploy_main.py .
 
-          # Ejecutar el script Python
+          chmod +x update_deploy_main.py
+
           python3 update_deploy_main.py
 
-          # Eliminar el script Python después de la ejecución
           rm update_deploy_main.py
 
           if ! git diff --quiet; then
