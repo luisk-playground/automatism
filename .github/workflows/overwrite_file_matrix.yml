@@ -45,8 +45,9 @@ jobs:
         git config --global user.email devops-automatism@santanderglobaltech.com
 
         git clone https://username:${{ secrets.GH_PAT }}@github.com/$REPO
-        # repo_name=$(basename "$line" .git)
-        cd $REPO
+        repo_name=$(basename "$REPO")
+        cd $repo_name 
+
         git checkout ${{ inputs.branch }}
 
         cp ../update_deploy_main.py .
