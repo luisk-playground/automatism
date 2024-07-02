@@ -34,6 +34,8 @@ jobs:
 
           chmod +x update_deploy_main.py
 
+          ls
+
           python3 update_deploy_main.py
 
           rm update_deploy_main.py
