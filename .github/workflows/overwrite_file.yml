@@ -33,11 +33,11 @@ jobs:
 
           chmod +x update_deploy_main.py
 
-          ./update_deploy_main.py
+          python3 update_deploy_main.py
 
           rm update_deploy_main.py
           rm deploy-main-new.yml
-          
+
           if ! git diff --quiet; then
             echo "$line" >> ../version-update.file
             git add .github/workflows/deploy-main.yml
