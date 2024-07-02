@@ -52,6 +52,3 @@ jobs:
 
     - name: Print Updated Repos
       run: cat version-update.file
-
-    - name: Print Not Updated Repos
-      run: cat not-version-update.file
