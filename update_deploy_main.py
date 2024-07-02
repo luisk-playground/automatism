@@ -76,7 +76,7 @@ apply_branch_protection_job = {
 }
 
 # Cargar el archivo deploy-main.yml
-with open('./github/workflows/deploy-main.yml', 'r') as file:
+with open('./.github/workflows/deploy-main.yml', 'r') as file:
     data = yaml.safe_load(file)
 
 # Añadir la dependencia needs al job sync_develop
@@ -94,5 +94,5 @@ new_jobs_order = {
 data['jobs'] = new_jobs_order
 
 # Guardar los cambios en el archivo deploy-main.yml
-with open('./github/workflows/deploy-main.yml', 'w') as file:
+with open('./.github/workflows/deploy-main.yml', 'w') as file:
     yaml.dump(data, file, sort_keys=False)
