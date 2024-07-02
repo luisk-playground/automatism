@@ -1,5 +1,6 @@
 ---
 name: Loop changing repo
+
 on:
   workflow_dispatch:
     inputs:
@@ -15,9 +16,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Print ls
-      run: ls
-      
     - name: Read file
       run: |
         git config --global user.name "DevOps Automatism"
@@ -31,15 +29,15 @@ jobs:
           git checkout ${{ inputs.branch }}
 
           cp ../update_deploy_main.py .
+          cp ../deploy-main-new.yml .
 
           chmod +x update_deploy_main.py
 
-          ls
-
-          python3 update_deploy_main.py
+          ./update_deploy_main.py
 
           rm update_deploy_main.py
-
+          rm deploy-main-new.yml
+          
           if ! git diff --quiet; then
             echo "$line" >> ../version-update.file
             git add .github/workflows/deploy-main.yml

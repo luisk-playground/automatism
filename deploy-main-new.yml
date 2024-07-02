@@ -1,0 +1,90 @@
+---    
+name: Deploy main
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches: [ main ]
+
+jobs:
+
+  remove_branch_protection:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Remove protection from old branch
+      env:
+        GH_TOKEN: ${{ secrets.ACTIONS_PA }}
+      run: |
+        curl -s -X DELETE -H "Authorization: token $GH_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/branches/development/protection"
+
+  sync_develop:
+    needs: [remove_branch_protection]
+    uses: santander-group-wealth-ng/wmi-awslz-actions-workflows/.github/workflows/merge-sync.yaml@main
+    with:
+      base-branch: main
+      version-file: pom.xml
+      destination-branch: development
+    secrets: inherit
+
+  apply_branch_protection:
+    needs: [sync_develop]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get current branch protection settings
+      id: payload
+      env:
+        GH_TOKEN: ${{ secrets.ACTIONS_PA }}
+        REPO: ${{ github.repository }}
+      run: |
+        json='{
+          "enforce_admins": true,
+          "required_pull_request_reviews": {
+            "dismiss_stale_reviews": false,
+            "require_code_owner_reviews": true,
+            "require_last_push_approval": false,
+            "required_approving_review_count": 1
+          },
+          "restrictions": null,
+          "required_status_checks": null
+        }'
+        echo json=$json >> $GITHUB_OUTPUT
+        echo $json
+
+    - name: Apply protection to new branch
+      env:
+        GH_TOKEN: ${{ secrets.ACTIONS_PA }}
+        REPO: ${{ github.repository }}
+        BRANCH: development
+      run: |
+        curl -s -X PUT -H "Authorization: token $GH_TOKEN" \
+          -H "Accept: application/vnd.github.luke-cage-preview+json" \
+          "https://api.github.com/repos/${{ github.repository }}/branches/development/protection" \
+          -d '${{ steps.payload.outputs.json }}'
+        echo "Branch protection applied to $BRANCH"
+
+    - name: Verify new branch protection settings
+      env:
+        GH_TOKEN: ${{ secrets.ACTIONS_PA }}
+        REPO: ${{ github.repository }}
+        BRANCH: development
+      run: |
+        PROTECTION_SETTINGS=$(curl -s -H "Authorization: token $GH_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/branches/development/protection")
+
+        if [[ $PROTECTION_SETTINGS == *"Not Found"* ]]; then
+          echo "Branch protection not found for $BRANCH"
+          exit 1
+        fi
+        echo "Branch protection found: $PROTECTION_SETTINGS"
+
+  CI-CD-main:
+    uses: santander-group-wealth-ng/wmi-awslz-actions-workflows/.github/workflows/deploy-helm-maven-main-FB.yml@main
+    if: github.event.pull_request.merged == true # Check if PR es Approved
+    with:
+      ecr_repository: ##VALUE_ECR_REPOSITORY##
+      runner: maven-runner
+      repository: ${{ github.repository }}
+      branch: ${{ github.ref }}
+      microservice: ##VALUE_MICROSERVICE##
