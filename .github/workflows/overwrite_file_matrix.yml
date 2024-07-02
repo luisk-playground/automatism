@@ -27,8 +27,12 @@ jobs:
           echo "matrix=${JSON}" >> $GITHUB_OUTPUT
 
   loop:
+    name: Overwriting deploy-main.yml in loop
     runs-on: ubuntu-latest
     needs: [read_repos_json]
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.read_repos_json.outputs.repos).repo_name }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
