@@ -41,7 +41,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Read file
+    - name: Adding file
       env:
         REPO: ${{ matrix.repo }}
       run: |
@@ -57,13 +57,8 @@ jobs:
         cp ../${{ inputs.file }} ${{ inputs.path }}
 
         if ! git diff --quiet; then
-          echo "$line" >> ../version-update.file
           git add .
           git commit -m "Added File"
           git push
-        else
-          echo "$line" >> ../not-version-update.file
+          echo "$line" >> $GITHUB_STEP_SUMMARY
         fi
-
-    - name: Print Updated Repos
-      run: cat version-update.file
