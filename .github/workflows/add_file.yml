@@ -56,6 +56,8 @@ jobs:
 
         cp ../${{ inputs.file }} ${{ inputs.path }}${{ inputs.file }}
 
+        ls ${{ inputs.path }}
+
         if ! git diff --quiet; then
           git add .
           git commit -m "Added File"
