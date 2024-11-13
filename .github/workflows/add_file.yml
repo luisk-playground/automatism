@@ -10,6 +10,8 @@ on:
         options: ['development', 'certification']
       file:
         description: 'File to add in repo'
+      path:
+        description: 'Path for the input file in repo'
 
 jobs:
 
@@ -52,12 +54,12 @@ jobs:
 
         git checkout ${{ inputs.branch }}
 
-        cp ../${{ inputs.file }} .
+        cp ../${{ inputs.file }} ${{ inputs.path }}
 
         if ! git diff --quiet; then
           echo "$line" >> ../version-update.file
-          git add .github/workflows/deploy-main.yml
-          git commit -m "Change workflow deploy-main"
+          git add .
+          git commit -m "Added File"
           git push
         else
           echo "$line" >> ../not-version-update.file
