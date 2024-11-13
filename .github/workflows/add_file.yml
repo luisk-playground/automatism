@@ -58,9 +58,7 @@ jobs:
 
         ls ${{ inputs.path }}
 
-        if ! git diff --quiet; then
-          git add .
-          git commit -m "Added File"
-          git push
-          echo "$line" >> $GITHUB_STEP_SUMMARY
-        fi
+        git add .
+        git commit -m "Added File"
+        git push
+        echo "$line" >> $GITHUB_STEP_SUMMARY
