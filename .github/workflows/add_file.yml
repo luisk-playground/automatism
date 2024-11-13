@@ -1,0 +1,67 @@
+---
+name: Add file in repo using matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to automate'
+        type: choice
+        options: ['development', 'certification']
+      file:
+        description: 'File to add in repo'
+
+jobs:
+
+  read_repos_json:
+    name: Read configuration.json used for Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      repos: ${{steps.get-repo-name.outputs.matrix}}
+    steps:
+      - name: Checkout code repository
+        uses: actions/checkout@v3
+
+      - name: Get configs var
+        id: get-repo-name
+        run: |
+          JSON=$(cat repo.json)
+          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
+
+  loop:
+    name: Adding file in input branch
+    runs-on: ubuntu-latest
+    needs: [read_repos_json]
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.read_repos_json.outputs.repos).repo_name }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Read file
+      env:
+        REPO: ${{ matrix.repo }}
+      run: |
+        git config --global user.name "DevOps Automatism"
+        git config --global user.email devops-automatism@santanderglobaltech.com
+
+        git clone https://username:${{ secrets.GH_PAT }}@github.com/$REPO
+        repo_name=$(basename "$REPO")
+        cd $repo_name 
+
+        git checkout ${{ inputs.branch }}
+
+        cp ../${{ inputs.file }} .
+
+        if ! git diff --quiet; then
+          echo "$line" >> ../version-update.file
+          git add .github/workflows/deploy-main.yml
+          git commit -m "Change workflow deploy-main"
+          git push
+        else
+          echo "$line" >> ../not-version-update.file
+        fi
+
+    - name: Print Updated Repos
+      run: cat version-update.file
