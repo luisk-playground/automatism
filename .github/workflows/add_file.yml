@@ -54,7 +54,7 @@ jobs:
 
         git checkout ${{ inputs.branch }}
 
-        cp ../${{ inputs.file }} ${{ inputs.path }}
+        cp ../${{ inputs.file }} ${{ inputs.path }}${{ inputs.file }}
 
         if ! git diff --quiet; then
           git add .
